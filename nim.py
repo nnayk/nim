@@ -3,8 +3,7 @@ import random
 import time
 
 
-class Nim():
-
+class Nim:
     def __init__(self, initial=[1, 3, 5, 7]):
         """
         Initialize game board.
@@ -70,8 +69,7 @@ class Nim():
             self.winner = self.player
 
 
-class NimAI():
-
+class NimAI:
     def __init__(self, alpha=0.5, epsilon=0.1):
         """
         Initialize AI with an empty Q-learning dictionary,
@@ -101,7 +99,7 @@ class NimAI():
         Return the Q-value for the state `state` and the action `action`.
         If no Q-value exists yet in `self.q`, return 0.
         """
-        raise NotImplementedError
+        return self.q.get((tuple(state), action), 0)
 
     def update_q_value(self, state, action, old_q, reward, future_rewards):
         """
@@ -118,7 +116,9 @@ class NimAI():
         `alpha` is the learning rate, and `new value estimate`
         is the sum of the current reward and estimated future rewards.
         """
-        raise NotImplementedError
+        self.q[(tuple(state), action)] = old_q + self.alpha * (
+            (reward + future_rewards) - old_q
+        )
 
     def best_future_reward(self, state):
         """
@@ -130,7 +130,12 @@ class NimAI():
         Q-value in `self.q`. If there are no available actions in
         `state`, return 0.
         """
-        raise NotImplementedError
+        if not Nim.available_actions(state):
+            return 0
+        return max(
+            self.get_q_value(state, action)
+            for action in Nim.available_actions(state)
+        )
 
     def choose_action(self, state, epsilon=True):
         """
@@ -147,7 +152,16 @@ class NimAI():
         If multiple actions have the same Q-value, any of those
         options is an acceptable return value.
         """
-        raise NotImplementedError
+        if epsilon:
+            if random.random() <= self.epsilon:
+                return random.choice(list(Nim.available_actions(state)))
+        bestAction = None
+        bestReward = float("-inf")
+        for action in Nim.available_actions(state):
+            if bestReward < self.get_q_value(state, action):
+                bestReward = self.get_q_value(state, action)
+                bestAction = action
+        return bestAction
 
 
 def train(n):
@@ -165,12 +179,11 @@ def train(n):
         # Keep track of last move made by either player
         last = {
             0: {"state": None, "action": None},
-            1: {"state": None, "action": None}
+            1: {"state": None, "action": None},
         }
 
         # Game loop
         while True:
-
             # Keep track of current state and action
             state = game.piles.copy()
             action = player.choose_action(game.piles)
@@ -190,7 +203,7 @@ def train(n):
                     last[game.player]["state"],
                     last[game.player]["action"],
                     new_state,
-                    1
+                    1,
                 )
                 break
 
@@ -200,7 +213,7 @@ def train(n):
                     last[game.player]["state"],
                     last[game.player]["action"],
                     new_state,
-                    0
+                    0,
                 )
 
     print("Done training")
@@ -225,7 +238,6 @@ def play(ai, human_player=None):
 
     # Game loop
     while True:
-
         # Print contents of piles
         print()
         print("Piles:")
